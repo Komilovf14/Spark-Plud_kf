@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Магазин + Telegram Mini App</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: #f8f9fa;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Header */
+        .app-header {
+            background: white;
+            padding: 20px 16px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.03);
+            text-align: center;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .app-header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            color: #1a1a1a;
+            letter-spacing: -0.3px;
+        }
+
+        .app-header p {
+            font-size: 14px;
+            color: #666;
+            margin-top: 4px;
+        }
+
+        /* Products Grid */
+        .products-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 16px;
+            padding: 16px;
+            max-width: 500px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        /* Product Card */
+        .product-card {
+            background: white;
+            border-radius: 20px;
+            overflow: hidden;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.03), 0 6px 6px rgba(0,0,0,0.05);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            cursor: pointer;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .product-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 20px 30px rgba(0,0,0,0.05), 0 8px 12px rgba(0,0,0,0.1);
+        }
+
+        .product-image {
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            object-fit: cover;
+            background: #f0f0f0;
+        }
+
+        .product-info {
+            padding: 12px 10px 14px;
+        }
+
+        .product-title {
+            font-size: 15px;
+            font-weight: 500;
+            color: #1a1a1a;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .product-price {
+            font-size: 17px;
+            font-weight: 700;
+            color: #007aff;
+        }
+
+        .product-price small {
+            font-size: 12px;
+            font-weight: 400;
+            color: #8e8e93;
+        }
+
+        /* Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
+            z-index: 1000;
+            align-items: flex-end;
+            justify-content: center;
+            animation: modalFadeIn 0.3s ease;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            width: 100%;
+            max-width: 500px;
+            border-radius: 30px 30px 0 0;
+            padding: 24px 20px 30px;
+            box-shadow: 0 -10px 30px rgba(0,0,0,0.1);
+            transform: translateY(0);
+            animation: slideUp 0.3s ease;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+
+        /* Gallery */
+        .gallery {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding: 4px 0 12px;
+            scrollbar-width: thin;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .gallery img {
+            width: 80px;
+            height: 80px;
+            border-radius: 16px;
+            object-fit: cover;
+            background: #f0f0f0;
+            flex-shrink: 0;
+            border: 2px solid transparent;
+            transition: border 0.2s;
+        }
+
+        .gallery img:first-child {
+            border-color: #007aff;
+        }
+
+        /* Product Details */
+        .modal-product-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin: 8px 0 4px;
+        }
+
+        .modal-product-price {
+            font-size: 28px;
+            font-weight: 800;
+            color: #007aff;
+            margin-bottom: 12px;
+        }
+
+        .modal-product-description {
+            font-size: 15px;
+            line-height: 1.5;
+            color: #3a3a3a;
+            background: #f8f8f8;
+            padding: 16px;
+            border-radius: 20px;
+            margin: 16px 0;
+        }
+
+        /* Quantity Selector */
+        .quantity-selector {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: #f2f2f2;
+            padding: 6px;
+            border-radius: 40px;
+            margin: 20px 0;
+        }
+
+        .quantity-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 40px;
+            border: none;
+            background: white;
+            font-size: 24px;
+            font-weight: 600;
+            color: #007aff;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+            cursor: pointer;
+            transition: all 0.15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .quantity-btn:active {
+            background: #007aff;
+            color: white;
+            transform: scale(0.95);
+        }
+
+        .quantity-value {
+            font-size: 20px;
+            font-weight: 600;
+            color: #1a1a1a;
+            min-width: 40px;
+            text-align: center;
+        }
+
+        /* Order Button */
+        .order-button {
+            width: 100%;
+            background: #007aff;
+            color: white;
+            border: none;
+            border-radius: 30px;
+            padding: 18px 0;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+            margin-top: 12px;
+            box-shadow: 0 10px 20px rgba(0,122,255,0.3);
+        }
+
+        .order-button:active {
+            background: #005bbf;
+            transform: scale(0.97);
+        }
+
+        .close-button {
+            background: transparent;
+            border: none;
+            font-size: 28px;
+            color: #999;
+            float: right;
+            cursor: pointer;
+            line-height: 1;
+            padding: 0 8px;
+            margin: -10px -8px 0 0;
+        }
+
+        .close-button:hover {
+            color: #333;
+        }
+
+        /* Toast (уведомление) */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 20px;
+            right: 20px;
+            background: #1a1a1a;
+            color: white;
+            text-align: center;
+            padding: 16px;
+            border-radius: 40px;
+            font-weight: 500;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            z-index: 2000;
+            animation: fadeInUp 0.3s;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideUp {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
+        @keyframes modalFadeIn {
+            from { background: rgba(0,0,0,0); }
+            to { background: rgba(0,0,0,0.5); }
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Адаптация для десктопа */
+        @media (min-width: 600px) {
+            .modal-content {
+                border-radius: 30px;
+                margin-bottom: 20px;
+                max-width: 480px;
+            }
+            .modal {
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header class="app-header">
+        <h1>Маркетплейс</h1>
+        <p>Минимализм. Качество. Стиль.</p>
+    </header>
+
+    <main>
+        <div class="products-grid" id="productsGrid"></div>
+    </main>
+
+    <!-- Модальное окно товара -->
+    <div class="modal" id="productModal">
+        <div class="modal-content">
+            <button class="close-button" id="closeModalBtn">&times;</button>
+            
+            <!-- Галерея изображений -->
+            <div class="gallery" id="modalGallery"></div>
+            
+            <h2 class="modal-product-title" id="modalProductTitle">Название</h2>
+            <div class="modal-product-price" id="modalProductPrice">0 ₽</div>
+            
+            <!-- Описание -->
+            <div class="modal-product-description" id="modalProductDescription"></div>
+            
+            <!-- Выбор количества -->
+            <div class="quantity-selector">
+                <button class="quantity-btn" id="decreaseQty">−</button>
+                <span class="quantity-value" id="quantityValue">1</span>
+                <button class="quantity-btn" id="increaseQty">+</button>
+            </div>
+            
+            <!-- Кнопка заказа -->
+            <button class="order-button" id="orderBtn">Заказать</button>
+        </div>
+    </div>
+
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script>
+        // Инициализация Telegram WebApp
+        const tg = window.Telegram.WebApp;
+        tg.ready();
+        tg.expand(); // Растянуть на всю высоту
+
+        // Данные товаров (как в ТЗ)
+        const products = [
+            {
+                id: 1,
+                name: "Кроссовки Air Max",
+                price: 12990,
+                description: "Легкие и дышащие кроссовки для повседневной носки. Подошва с технологией Air обеспечивает максимальный комфорт.",
+                cover: "https://via.placeholder.com/300/007aff/ffffff?text=Air+Max+1",
+                images: [
+                    "https://via.placeholder.com/300/007aff/ffffff?text=Air+Max+1",
+                    "https://via.placeholder.com/300/0051ff/ffffff?text=Air+Max+2",
+                    "https://via.placeholder.com/300/003bbf/ffffff?text=Air+Max+3"
+                ]
+            },
+            {
+                id: 2,
+                name: "Рюкзак Urban",
+                price: 4990,
+                description: "Водонепроницаемый рюкзак из плотной ткани. Идеален для города и путешествий.",
+                cover: "https://via.placeholder.com/300/34c759/ffffff?text=Urban+Pack",
+                images: [
+                    "https://via.placeholder.com/300/34c759/ffffff?text=Urban+1",
+                    "https://via.placeholder.com/300/2aa84a/ffffff?text=Urban+2"
+                ]
+            },
+            {
+                id: 3,
+                name: "Часы Classic",
+                price: 8990,
+                description: "Минималистичные часы с кожаным ремешком. Механизм — японский кварц.",
+                cover: "https://via.placeholder.com/300/ff3b30/ffffff?text=Classic+Watch",
+                images: [
+                    "https://via.placeholder.com/300/ff3b30/ffffff?text=Watch+1",
+                    "https://via.placeholder.com/300/d6302a/ffffff?text=Watch+2",
+                    "https://via.placeholder.com/300/ad241f/ffffff?text=Watch+3"
+                ]
+            },
+            {
+                id: 4,
+                name: "Наушники Pro",
+                price: 6990,
+                description: "Беспроводные наушники с активным шумоподавлением. 20 часов работы.",
+                cover: "https://via.placeholder.com/300/ffcc00/000000?text=Headphones",
+                images: [
+                    "https://via.placeholder.com/300/ffcc00/000000?text=HP+1",
+                    "https://via.placeholder.com/300/e6b800/000000?text=HP+2"
+                ]
+            }
+        ];
+
+        // Текущий выбранный товар и количество
+        let currentProduct = null;
+        let currentQuantity = 1;
+
+        // Элементы DOM
+        const productsGrid = document.getElementById('productsGrid');
+        const modal = document.getElementById('productModal');
+        const closeModalBtn = document.getElementById('closeModalBtn');
+        const modalGallery = document.getElementById('modalGallery');
+        const modalProductTitle = document.getElementById('modalProductTitle');
+        const modalProductPrice = document.getElementById('modalProductPrice');
+        const modalProductDescription = document.getElementById('modalProductDescription');
+        const quantityValue = document.getElementById('quantityValue');
+        const decreaseQty = document.getElementById('decreaseQty');
+        const increaseQty = document.getElementById('increaseQty');
+        const orderBtn = document.getElementById('orderBtn');
+
+        // Отрисовка каталога
+        function renderCatalog() {
+            productsGrid.innerHTML = '';
+            products.forEach(product => {
+                const card = document.createElement('div');
+                card.className = 'product-card';
+                card.dataset.id = product.id;
+                card.innerHTML = `
+                    <img src="${product.cover}" alt="${product.name}" class="product-image" loading="lazy">
+                    <div class="product-info">
+                        <div class="product-title">${product.name}</div>
+                        <div class="product-price">${product.price.toLocaleString()} <small>₽</small></div>
+                    </div>
+                `;
+                card.addEventListener('click', () => openProductModal(product));
+                productsGrid.appendChild(card);
+            });
+        }
+
+        // Открыть модальное окно товара
+        function openProductModal(product) {
+            currentProduct = product;
+            currentQuantity = 1;
+            updateQuantityDisplay();
+
+            // Заполняем данные
+            modalProductTitle.textContent = product.name;
+            modalProductPrice.textContent = `${product.price.toLocaleString()} ₽`;
+            modalProductDescription.textContent = product.description;
+
+            // Галерея
+            modalGallery.innerHTML = '';
+            product.images.forEach(imgSrc => {
+                const img = document.createElement('img');
+                img.src = imgSrc;
+                img.alt = product.name;
+                img.loading = 'lazy';
+                modalGallery.appendChild(img);
+            });
+
+            // Подсветка первого фото в галерее (опционально)
+            if (modalGallery.children.length > 0) {
+                modalGallery.children[0].style.borderColor = '#007aff';
+            }
+
+            modal.classList.add('active');
+            tg.expand(); // на всякий случай
+        }
+
+        // Закрыть модальное окно
+        function closeModal() {
+            modal.classList.remove('active');
+        }
+
+        // Обновить отображение количества
+        function updateQuantityDisplay() {
+            quantityValue.textContent = currentQuantity;
+        }
+
+        // Показать всплывающее уведомление (без alert)
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => {
+                toast.remove();
+            }, 2500);
+        }
+
+        // Обработчики количества
+        decreaseQty.addEventListener('click', () => {
+            if (currentQuantity > 1) {
+                currentQuantity--;
+                updateQuantityDisplay();
+            }
+        });
+
+        increaseQty.addEventListener('click', () => {
+            if (currentQuantity < 99) {
+                currentQuantity++;
+                updateQuantityDisplay();
+            }
+        });
+
+        // Закрытие модалки
+        closeModalBtn.addEventListener('click', closeModal);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeModal();
+        });
+
+        // Заказ
+        orderBtn.addEventListener('click', () => {
+            if (!currentProduct) return;
+
+            // Получаем данные пользователя Telegram
+            const user = tg.initDataUnsafe?.user;
+            let userName = 'Неизвестно';
+            
+            if (user) {
+                userName = user.first_name || '';
+                if (user.last_name) userName += ' ' + user.last_name;
+                if (user.username) userName += ` (@${user.username})`;
+                userName = userName.trim() || `ID: ${user.id}`;
+            } else {
+                userName = 'Тестовый пользователь (вне Telegram)';
+            }
+
+            // Формируем данные для отправки
+            const orderData = {
+                name: userName,
+                product: currentProduct.name,
+                quantity: currentQuantity
+            };
+
+            // Отправка через Telegram WebApp
+            try {
+                tg.sendData(JSON.stringify(orderData));
+                showToast('✅ Заказ отправляется...');
+            } catch (e) {
+                console.error('Ошибка отправки:', e);
+                showToast('❌ Ошибка отправки');
+            }
+
+            // Не закрываем модалку сразу, даём время увидеть уведомление
+            setTimeout(() => {
+                closeModal();
+            }, 500);
+        });
+
+        // Инициализация
+        renderCatalog();
+
+        // Если пользователь уже закрыл мини-приложение, можно добавить обработчик
+        tg.onEvent('viewportChanged', tg.expand);
+    </script>
+</body>
+</html>
